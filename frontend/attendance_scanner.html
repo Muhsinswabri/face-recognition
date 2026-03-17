@@ -39,14 +39,49 @@
                     <button id="stopAttendanceBtn" class="btn btn-outline-light btn-sm">Stop Feed</button>
                 </div>
             </div>
-            <div class="attendance-stage">
-                <video id="attendanceVideo" class="attendance-feed d-none" autoplay playsinline muted></video>
-                <canvas id="attendanceCanvas" class="d-none"></canvas>
-                <div id="attendancePlaceholder" class="attendance-placeholder">
-                    <i class="fas fa-camera attendance-placeholder-icon"></i>
-                    <p id="attendancePlaceholderTitle" class="mb-1 fw-semibold">Starting camera</p>
-                    <small id="attendancePlaceholderText" class="text-muted">The browser camera preview will appear here once permission is granted.</small>
+            <div class="attendance-layout">
+                <div class="attendance-stage">
+                    <video id="attendanceVideo" class="attendance-feed d-none" autoplay playsinline muted></video>
+                    <canvas id="attendanceCanvas" class="d-none"></canvas>
+                    <div id="attendancePlaceholder" class="attendance-placeholder">
+                        <i class="fas fa-camera attendance-placeholder-icon"></i>
+                        <p id="attendancePlaceholderTitle" class="mb-1 fw-semibold">Starting camera</p>
+                        <small id="attendancePlaceholderText" class="text-muted">The browser camera preview will appear here once permission is granted.</small>
+                    </div>
                 </div>
+                <aside class="recognition-panel">
+                    <p class="attendance-eyebrow mb-1">Recognized Person</p>
+                    <div class="recognition-card">
+                        <div class="recognition-photo-wrap">
+                            <img id="recognizedStudentImage" class="recognition-photo d-none" alt="Recognized student">
+                            <div id="recognizedStudentPlaceholder" class="recognition-photo-placeholder">
+                                <i class="fas fa-user"></i>
+                            </div>
+                        </div>
+                        <div class="recognition-info">
+                            <div>
+                                <span class="text-muted">Name</span>
+                                <strong id="recognizedStudentName" class="d-block">Waiting for recognition</strong>
+                            </div>
+                            <div>
+                                <span class="text-muted">Student ID</span>
+                                <strong id="recognizedStudentId" class="d-block">-</strong>
+                            </div>
+                            <div>
+                                <span class="text-muted">Major</span>
+                                <strong id="recognizedStudentMajor" class="d-block">-</strong>
+                            </div>
+                            <div>
+                                <span class="text-muted">Year</span>
+                                <strong id="recognizedStudentYear" class="d-block">-</strong>
+                            </div>
+                            <div>
+                                <span class="text-muted">Match score</span>
+                                <strong id="recognizedStudentSimilarity" class="d-block">-</strong>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
             </div>
             <div class="attendance-meta">
                 <div>

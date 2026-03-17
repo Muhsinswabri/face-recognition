@@ -335,6 +335,13 @@ const attendanceResult = document.getElementById('attendanceResult');
 const attendanceResultTitle = document.getElementById('attendanceResultTitle');
 const attendanceResultMessage = document.getElementById('attendanceResultMessage');
 const attendanceResultIcon = document.getElementById('attendanceResultIcon');
+const recognizedStudentImage = document.getElementById('recognizedStudentImage');
+const recognizedStudentPlaceholder = document.getElementById('recognizedStudentPlaceholder');
+const recognizedStudentName = document.getElementById('recognizedStudentName');
+const recognizedStudentId = document.getElementById('recognizedStudentId');
+const recognizedStudentMajor = document.getElementById('recognizedStudentMajor');
+const recognizedStudentYear = document.getElementById('recognizedStudentYear');
+const recognizedStudentSimilarity = document.getElementById('recognizedStudentSimilarity');
 
 const cameraBtn = globalAttendanceBtn || startAttendanceBtn;
 let attendanceStartInFlight = false;
@@ -398,6 +405,36 @@ function updateAttendanceResult(type, title, message) {
 
     attendanceResultTitle.innerText = title;
     attendanceResultMessage.innerText = message;
+}
+
+function updateRecognizedStudentCard(data = {}) {
+    if (!recognizedStudentName) return;
+
+    const hasMatch = Boolean(data.student_id);
+
+    recognizedStudentName.innerText = hasMatch ? (data.student_name || data.student_id) : 'Waiting for recognition';
+    recognizedStudentId.innerText = hasMatch ? data.student_id : '-';
+    recognizedStudentMajor.innerText = hasMatch ? (data.student_major || 'Not available') : '-';
+    recognizedStudentYear.innerText = hasMatch ? (data.student_year || 'Not available') : '-';
+    recognizedStudentSimilarity.innerText = typeof data.similarity === 'number'
+        ? `${(data.similarity * 100).toFixed(1)}%`
+        : '-';
+
+    if (!recognizedStudentImage || !recognizedStudentPlaceholder) return;
+
+    if (hasMatch && data.student_image_url) {
+        recognizedStudentImage.src = data.student_image_url;
+        recognizedStudentImage.classList.remove('d-none');
+        recognizedStudentPlaceholder.classList.add('d-none');
+        recognizedStudentImage.onerror = function () {
+            recognizedStudentImage.classList.add('d-none');
+            recognizedStudentPlaceholder.classList.remove('d-none');
+        };
+    } else {
+        recognizedStudentImage.removeAttribute('src');
+        recognizedStudentImage.classList.add('d-none');
+        recognizedStudentPlaceholder.classList.remove('d-none');
+    }
 }
 
 async function parseApiResponse(res) {
@@ -515,6 +552,8 @@ async function captureAndRecognizeFrame() {
         if (attendanceStudent) {
             attendanceStudent.innerText = data.student_name || data.student_id || 'Waiting for match';
         }
+
+        updateRecognizedStudentCard(data);
 
         updateAttendanceBadge(Boolean(data.active), Boolean(data.last_error));
 

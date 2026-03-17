@@ -9,7 +9,7 @@ import faiss
 import numpy as np
 from insightface.app import FaceAnalysis
 
-from database import mark_attendance
+from database import get_student_by_id, mark_attendance
 
 
 BASE_DIR = os.path.dirname(__file__)
@@ -211,7 +211,8 @@ class BrowserRecognitionSystem:
                 "elapsed_ms": round((time.perf_counter() - started_at) * 1000, 1)
             }
 
-        student_name = matched_student_id
+        student = get_student_by_id(matched_student_id)
+        student_name = student.get("name") if student else matched_student_id
         result = mark_attendance(matched_student_id, self.current_day)
 
         with self.lock:
@@ -235,6 +236,9 @@ class BrowserRecognitionSystem:
             "matched": True,
             "student_id": matched_student_id,
             "student_name": student_name,
+            "student_major": student.get("major") if student else "",
+            "student_year": student.get("year") if student else "",
+            "student_image_url": f"/static/student_images/{matched_student_id}.jpg",
             "similarity": round(best_similarity, 4),
             "message": result["message"],
             "elapsed_ms": round((time.perf_counter() - started_at) * 1000, 1)

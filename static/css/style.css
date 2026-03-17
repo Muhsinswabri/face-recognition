@@ -223,6 +223,13 @@ body::before {
     gap: 0.75rem;
 }
 
+.attendance-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.75fr) minmax(280px, 0.95fr);
+    gap: 1rem;
+    align-items: stretch;
+}
+
 .attendance-stage {
     position: relative;
     overflow: hidden;
@@ -237,7 +244,64 @@ body::before {
 .attendance-feed {
     display: block;
     width: 100%;
-    height: auto;
+    height: 100%;
+    object-fit: cover;
+}
+
+.recognition-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.recognition-card {
+    height: 100%;
+    border-radius: 18px;
+    border: 1px solid rgba(125, 211, 252, 0.15);
+    background:
+        radial-gradient(circle at top right, rgba(14, 165, 233, 0.16), transparent 30%),
+        linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92));
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.recognition-photo-wrap {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid var(--glass-border);
+    min-height: 260px;
+}
+
+.recognition-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.recognition-photo-placeholder {
+    min-height: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #7dd3fc;
+    font-size: 3rem;
+}
+
+.recognition-info {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.recognition-info > div {
+    background: rgba(15, 23, 42, 0.45);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 0.85rem 1rem;
 }
 
 .attendance-placeholder {
@@ -306,6 +370,10 @@ body::before {
 @media (max-width: 768px) {
     .attendance-viewer-header {
         flex-direction: column;
+    }
+
+    .attendance-layout {
+        grid-template-columns: 1fr;
     }
 
     .attendance-actions {
