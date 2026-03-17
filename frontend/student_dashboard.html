@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard | Attendance System</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ static_asset_url('css/style.css') }}">
+</head>
+<body onload="loadStudentStats()">
+
+    <div id="customAlert"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="fas fa-user-graduate text-accent me-2"></i>Student Portal
+            </a>
+            <button class="btn btn-outline-danger btn-sm ms-auto logout-btn" data-type="student">Logout</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container py-5">
+        
+        <div class="row mb-5">
+            <div class="col-12 text-center">
+                <div class="mb-4">
+                    <img id="stImage" src="" alt="Student Profile" class="rounded-circle border border-3 border-primary shadow" style="width: 120px; height: 120px; object-fit: cover; background-color: var(--glass-bg); display: none;">
+                </div>
+                <h1 class="display-6 fw-bold mb-2">Welcome, <span id="stName" class="text-primary">Loading...</span></h1>
+                <p class="text-muted fs-5 mb-1">ID: <span id="stId" class="text-white"></span></p>
+                <p class="text-accent fs-6 fw-medium"><i class="fas fa-graduation-cap me-2"></i><span id="stMajor"></span></p>
+            </div>
+        </div>
+
+        <div class="row g-4 justify-content-center">
+            
+            <!-- Overall Percentage Circle -->
+            <div class="col-md-6 col-lg-4">
+                <div class="glass-panel p-4 h-100 d-flex flex-column align-items-center justify-content-center text-center">
+                    <h4 class="fw-bold mb-4">Overall Attendance</h4>
+                    
+                    <div class="progress-circle" id="progressCircle">
+                        <div class="progress-text text-white" id="progressText">--%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats & Requirements -->
+            <div class="col-md-6 col-lg-5">
+                <div class="row g-4 h-100">
+                    <!-- Cards -->
+                    <div class="col-6">
+                        <div class="glass-panel p-4 text-center h-100 cursor-pointer" data-bs-toggle="modal" data-bs-target="#workingDaysModal" title="Click to view dates">
+                            <i class="fas fa-calendar-days fs-2 text-warning mb-3"></i>
+                            <h5 class="fw-bold text-muted mt-2">Total Working Days</h5>
+                            <h2 class="fw-bold m-0" id="stTotalDays">-</h2>
+                        </div>
+                    </div>
+                    
+                    <div class="col-6">
+                        <div class="glass-panel p-4 text-center h-100 cursor-pointer" data-bs-toggle="modal" data-bs-target="#attendedDaysModal" title="Click to view dates">
+                            <i class="fas fa-calendar-check fs-2 text-success mb-3"></i>
+                            <h5 class="fw-bold text-muted mt-2">Days Attended</h5>
+                            <h2 class="fw-bold m-0" id="stDaysAttended">-</h2>
+                        </div>
+                    </div>
+
+                    <!-- 75% Requirement Box -->
+                    <div class="col-12">
+                        <div class="glass-panel p-4" style="background: rgba(30, 41, 59, 0.9);">
+                            <h5 class="fw-bold text-white mb-3">Requirement Status (75% Minimum)</h5>
+                            <div id="requirementMetric" class="p-3 rounded bg-dark border border-secondary text-center">
+                                <span class="spinner-border spinner-border-sm text-light"></span> Calculating...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Working Days Modal -->
+    <div class="modal fade" id="workingDaysModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content glass-panel text-white border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title"><i class="fas fa-calendar-days text-warning me-2"></i>Total Working Days</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul id="workingDaysList" class="list-group list-group-flush bg-transparent">
+                        <!-- Dates go here -->
+                        <li class="list-group-item text-white bg-transparent border-secondary text-center">Loading...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attended Days Modal -->
+    <div class="modal fade" id="attendedDaysModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content glass-panel text-white border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title"><i class="fas fa-calendar-check text-success me-2"></i>Days Attended</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul id="attendedDaysList" class="list-group list-group-flush bg-transparent">
+                        <!-- Dates go here -->
+                        <li class="list-group-item text-white bg-transparent border-secondary text-center">Loading...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ static_asset_url('js/main.js') }}"></script>
+</body>
+</html>

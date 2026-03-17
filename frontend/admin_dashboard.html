@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Attendance System</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ static_asset_url('css/style.css') }}">
+</head>
+<body onload="loadAdminStats()">
+
+    <div id="customAlert"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="fas fa-shield-halved text-primary me-2"></i>Admin Dashboard
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav align-items-center">
+                    <li class="nav-item me-3">
+                        <button class="btn btn-primary-custom btn-sm" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                            <i class="fas fa-user-plus me-1"></i> Add Student
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-outline-danger btn-sm logout-btn" data-type="admin">Logout</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container py-5">
+        
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <div>
+                <h2 class="fw-bold mb-1">Today's Overview</h2>
+                <p class="text-muted mb-0">Real-time attendance statistics and system management.</p>
+            </div>
+            <button id="startAttendanceBtn" class="btn btn-success btn-lg shadow-sm" style="border-radius: 12px;">
+                <i class="fas fa-camera retro-camera me-2"></i> Start Face Recognition
+            </button>
+        </div>
+
+        <section id="attendanceViewer" class="glass-panel attendance-viewer mb-5 d-none">
+            <div class="attendance-viewer-header">
+                <div>
+                    <p class="attendance-eyebrow mb-1">Live Recognition</p>
+                    <h3 class="h4 fw-bold mb-2">Browser Attendance Feed</h3>
+                    <p class="text-muted mb-0">The camera stream and recognition overlay now run directly inside the admin dashboard.</p>
+                </div>
+                <div class="attendance-actions">
+                    <span id="attendanceStatusBadge" class="badge text-bg-secondary">Offline</span>
+                    <button id="stopAttendanceBtn" class="btn btn-outline-light btn-sm">Stop Feed</button>
+                </div>
+            </div>
+            <div class="attendance-stage">
+                <img id="attendanceFeed" alt="Live attendance stream" class="attendance-feed d-none">
+                <div id="attendancePlaceholder" class="attendance-placeholder">
+                    <i class="fas fa-camera attendance-placeholder-icon"></i>
+                    <p class="mb-1 fw-semibold">Recognition feed will appear here</p>
+                    <small class="text-muted">Click “Start Face Recognition” to start the camera and stream it into this page.</small>
+                </div>
+            </div>
+            <div class="attendance-meta">
+                <div>
+                    <span class="text-muted">Latest event</span>
+                    <strong id="attendanceLastEvent" class="d-block">Idle</strong>
+                </div>
+                <div>
+                    <span class="text-muted">Recognized student</span>
+                    <strong id="attendanceStudent" class="d-block">Waiting for match</strong>
+                </div>
+            </div>
+        </section>
+
+        <!-- Top Stats Row -->
+        <div class="row g-4 mb-5">
+            <!-- Total Students -->
+            <div class="col-md-6 col-lg-3">
+                <div class="glass-panel stat-card text-center h-100 cursor-pointer" data-bs-toggle="modal" data-bs-target="#totalStudentsModal" title="View Students">
+                    <div class="text-muted text-uppercase fw-bold mb-2">Total Students</div>
+                    <i class="fas fa-users fs-1 text-primary mb-2"></i>
+                    <div class="stat-value" id="totalStudents">-</div>
+                </div>
+            </div>
+            
+            <!-- Present Today -->
+            <div class="col-md-6 col-lg-3">
+                <div class="glass-panel stat-card text-center h-100 cursor-pointer" data-bs-toggle="modal" data-bs-target="#presentTodayModal" title="View Present Students" style="border-bottom: 4px solid var(--success);">
+                    <div class="text-muted text-uppercase fw-bold mb-2">Present Today</div>
+                    <i class="fas fa-user-check fs-1 text-success mb-2"></i>
+                    <div class="stat-value text-success" id="presentToday">-</div>
+                </div>
+            </div>
+
+            <!-- Absent Today -->
+            <div class="col-md-6 col-lg-3">
+                <div class="glass-panel stat-card text-center h-100 cursor-pointer" data-bs-toggle="modal" data-bs-target="#absentTodayModal" title="View Absent Students" style="border-bottom: 4px solid var(--danger);">
+                    <div class="text-muted text-uppercase fw-bold mb-2">Absent Today</div>
+                    <i class="fas fa-user-xmark fs-1 text-danger mb-2"></i>
+                    <div class="stat-value" id="absentToday">-</div>
+                </div>
+            </div>
+
+            <!-- Overall % -->
+            <div class="col-md-6 col-lg-3">
+                <div class="glass-panel stat-card text-center h-100">
+                    <div class="text-muted text-uppercase fw-bold mb-2">Today's Attendance %</div>
+                    <div id="qualityStatus" class="mb-2"></div>
+                    <div class="stat-value" id="attendancePerc">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals for Student Lists -->
+
+    <!-- Total Students Modal -->
+    <div class="modal fade" id="totalStudentsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content glass-panel text-white border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title"><i class="fas fa-users text-primary me-2"></i>Total Enrolled Students</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <ul id="totalStudentsList" class="list-group list-group-flush bg-transparent">
+                        <li class="list-group-item text-white bg-transparent border-secondary text-center">Loading...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Present Today Modal -->
+    <div class="modal fade" id="presentTodayModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content glass-panel text-white border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title"><i class="fas fa-user-check text-success me-2"></i>Students Present Today</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <ul id="presentTodayList" class="list-group list-group-flush bg-transparent">
+                        <li class="list-group-item text-white bg-transparent border-secondary text-center">Loading...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Absent Today Modal -->
+    <div class="modal fade" id="absentTodayModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content glass-panel text-white border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title"><i class="fas fa-user-xmark text-danger me-2"></i>Students Absent Today</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <ul id="absentTodayList" class="list-group list-group-flush bg-transparent">
+                        <li class="list-group-item text-white bg-transparent border-secondary text-center">Loading...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Student Modal -->
+    <div class="modal fade" id="addStudentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content glass-panel" style="border: 1px solid var(--glass-border);">
+                <div class="modal-header border-bottom-0">
+                    <h5 class="modal-title fw-bold text-white"><i class="fas fa-user-plus me-2 text-primary"></i>Register New Student</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-warning small mb-4">
+                        <i class="fas fa-info-circle me-1"></i> You can either upload a clear picture of the student's face OR leave the image empty to use the webcam for live capture.
+                    </p>
+                    <form id="addStudentForm">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Full Name</label>
+                            <input type="text" id="studentName" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Student ID (Unique)</label>
+                            <input type="text" id="newStudentId" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Major</label>
+                            <input type="text" id="studentMajor" class="form-control" placeholder="e.g. Computer Science" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Year</label>
+                            <input type="text" id="studentYear" class="form-control" placeholder="e.g. 2024" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label text-muted">Student Image (Optional)</label>
+                            <input type="file" id="studentImage" class="form-control" accept="image/*">
+                            <small class="text-muted mt-1 d-block">If uploaded, this image will be used instead of the webcam.</small>
+                        </div>
+                        <div class="d-grid pt-2">
+                            <button type="submit" class="btn btn-primary-custom" id="submitStudentBtn">Save & Start Camera Training</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ static_asset_url('js/main.js') }}"></script>
+</body>
+</html>

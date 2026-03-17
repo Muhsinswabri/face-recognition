@@ -1,0 +1,2 @@
+﻿Setting up database: attendance_db
+Error creating DB: The maximum number of databases allowed for the selected plan has reached. Upgrade to increase the limit.

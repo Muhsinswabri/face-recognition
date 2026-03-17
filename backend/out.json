@@ -1,0 +1,50 @@
+[
+  {
+    "name": "Muhmmed Zafeer",
+    "major": "Computer",
+    "starting_year": 2022,
+    "total_attendance": 5,
+    "standing": "6",
+    "year": "2",
+    "last_attendance_time": "2026-03-06 09:55:57",
+    "$id": "1479",
+    "$sequence": 1,
+    "$createdAt": "2026-03-06T04:18:36.876+00:00",
+    "$updatedAt": "2026-03-06T04:25:59.542+00:00",
+    "$permissions": [],
+    "$databaseId": "face-attendance-db",
+    "$collectionId": "students"
+  },
+  {
+    "name": "Muhammed Yaseen",
+    "major": "Computer",
+    "starting_year": 2022,
+    "total_attendance": 0,
+    "standing": "6",
+    "year": "2",
+    "last_attendance_time": "2024-01-01 00:00:00",
+    "$id": "1478",
+    "$sequence": 2,
+    "$createdAt": "2026-03-06T04:20:04.468+00:00",
+    "$updatedAt": "2026-03-06T04:20:04.468+00:00",
+    "$permissions": [],
+    "$databaseId": "face-attendance-db",
+    "$collectionId": "students"
+  },
+  {
+    "name": "Muhsin Swabri",
+    "major": "Computer",
+    "starting_year": 2022,
+    "total_attendance": 18,
+    "standing": "6",
+    "year": "2",
+    "last_attendance_time": "2026-03-07 12:37:26",
+    "$id": "1480",
+    "$sequence": 3,
+    "$createdAt": "2026-03-06T04:21:24.693+00:00",
+    "$updatedAt": "2026-03-07T07:07:28.659+00:00",
+    "$permissions": [],
+    "$databaseId": "face-attendance-db",
+    "$collectionId": "students"
+  }
+]
