@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for, s
 import os
 
 # Import local modules
+from attendance_rules import get_public_attendance_rules, save_attendance_rules
 from database import (
     get_admin_by_email,
     get_student_by_id,
@@ -203,6 +204,64 @@ def api_admin_stats():
     })
 
 
+@app.route('/api/admin/attendance_rules', methods=['GET'])
+def api_get_admin_attendance_rules():
+    if not session.get('admin_logged_in'):
+        return jsonify({
+            "status": "error",
+            "message": "Unauthorized"
+        }), 401
+
+    return jsonify({
+        "status": "success",
+        "data": get_public_attendance_rules()
+    })
+
+
+@app.route('/api/admin/attendance_rules', methods=['POST'])
+def api_save_admin_attendance_rules():
+    if not session.get('admin_logged_in'):
+        return jsonify({
+            "status": "error",
+            "message": "Unauthorized"
+        }), 401
+
+    data = request.json or {}
+
+    try:
+        rules = save_attendance_rules(
+            location_name=data.get('location_name'),
+            latitude=data.get('latitude'),
+            longitude=data.get('longitude'),
+            start_time=data.get('start_time'),
+            end_time=data.get('end_time')
+        )
+    except ValueError as exc:
+        return jsonify({
+            "status": "error",
+            "message": str(exc)
+        }), 400
+    except Exception as exc:
+        return jsonify({
+            "status": "error",
+            "message": str(exc)
+        }), 500
+
+    return jsonify({
+        "status": "success",
+        "message": "Attendance rules saved successfully.",
+        "data": rules
+    })
+
+
+@app.route('/api/attendance/rules', methods=['GET'])
+def api_get_public_attendance_rules():
+    return jsonify({
+        "status": "success",
+        "data": get_public_attendance_rules()
+    })
+
+
 # ==============================
 # STUDENT DASHBOARD STATS
 # ==============================
@@ -396,7 +455,14 @@ def api_attendance_recognize_frame():
             "message": "Frame image is required."
         }), 400
 
-    data = recognition_system.recognize_frame_bytes(frame.read())
+    latitude = request.form.get('latitude')
+    longitude = request.form.get('longitude')
+
+    data = recognition_system.recognize_frame_bytes(
+        frame.read(),
+        student_latitude=latitude,
+        student_longitude=longitude
+    )
 
     return jsonify({
         "status": "success" if data.get("matched") or data.get("active") else "error",

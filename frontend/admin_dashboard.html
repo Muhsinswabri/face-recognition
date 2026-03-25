@@ -4,20 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard | Attendance System</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ static_asset_url('css/style.css') }}">
 </head>
 <body onload="loadAdminStats()">
 
     <div id="customAlert"></div>
 
-    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container">
             <a class="navbar-brand fw-bold" href="#">
@@ -41,9 +36,7 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
     <div class="container py-5">
-        
         <div class="d-flex justify-content-between align-items-center mb-5">
             <div>
                 <h2 class="fw-bold mb-1">Today's Overview</h2>
@@ -53,6 +46,49 @@
                 <i class="fas fa-camera retro-camera me-2"></i> Start Face Recognition
             </button>
         </div>
+
+        <section class="glass-panel rule-panel mb-5">
+            <div class="rule-panel-header">
+                <div>
+                    <p class="attendance-eyebrow mb-1">Attendance Rules</p>
+                    <h3 class="h4 fw-bold mb-2">Set Allowed Location And Time</h3>
+                    <p class="text-muted mb-0">Only students within a 5 meter radius of the saved location and inside the saved time window can mark attendance.</p>
+                </div>
+                <div id="attendanceRuleSummary" class="rule-summary">Rules not configured yet.</div>
+            </div>
+            <form id="attendanceRulesForm" class="row g-3 mt-1">
+                <div class="col-md-6">
+                    <label for="attendanceLocationName" class="form-label text-muted">Location Name</label>
+                    <input type="text" id="attendanceLocationName" class="form-control" placeholder="e.g. Classroom A-101">
+                </div>
+                <div class="col-md-3">
+                    <label for="attendanceStartTime" class="form-label text-muted">Start Time</label>
+                    <input type="time" id="attendanceStartTime" class="form-control" required>
+                </div>
+                <div class="col-md-3">
+                    <label for="attendanceEndTime" class="form-label text-muted">End Time</label>
+                    <input type="time" id="attendanceEndTime" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="attendanceLatitude" class="form-label text-muted">Latitude</label>
+                    <input type="number" id="attendanceLatitude" class="form-control" step="any" placeholder="e.g. 22.5726" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="attendanceLongitude" class="form-label text-muted">Longitude</label>
+                    <input type="number" id="attendanceLongitude" class="form-control" step="any" placeholder="e.g. 88.3639" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label text-muted">Radius</label>
+                    <input type="text" class="form-control" value="5 meters" disabled>
+                </div>
+                <div class="col-12 d-flex flex-wrap gap-2 pt-2">
+                    <button type="button" id="useCurrentLocationBtn" class="btn btn-outline-light">
+                        <i class="fas fa-location-crosshairs me-2"></i>Use Current Location
+                    </button>
+                    <button type="submit" id="saveAttendanceRulesBtn" class="btn btn-primary-custom">Save Attendance Rules</button>
+                </div>
+            </form>
+        </section>
 
         <section id="attendanceViewer" class="glass-panel attendance-viewer mb-5 d-none">
             <div class="attendance-viewer-header">
@@ -66,13 +102,49 @@
                     <button id="stopAttendanceBtn" class="btn btn-outline-light btn-sm">Stop Feed</button>
                 </div>
             </div>
-            <div class="attendance-stage">
-                <img id="attendanceFeed" alt="Live attendance stream" class="attendance-feed d-none">
-                <div id="attendancePlaceholder" class="attendance-placeholder">
-                    <i class="fas fa-camera attendance-placeholder-icon"></i>
-                    <p class="mb-1 fw-semibold">Recognition feed will appear here</p>
-                    <small class="text-muted">Click “Start Face Recognition” to start the camera and stream it into this page.</small>
+            <div class="attendance-layout">
+                <div class="attendance-stage">
+                    <video id="attendanceVideo" class="attendance-feed d-none" autoplay playsinline muted></video>
+                    <canvas id="attendanceCanvas" class="d-none"></canvas>
+                    <div id="attendancePlaceholder" class="attendance-placeholder">
+                        <i class="fas fa-camera attendance-placeholder-icon"></i>
+                        <p id="attendancePlaceholderTitle" class="mb-1 fw-semibold">Recognition feed will appear here</p>
+                        <small id="attendancePlaceholderText" class="text-muted">Click "Start Face Recognition" to start the camera and stream it into this page.</small>
+                    </div>
                 </div>
+                <aside class="recognition-panel">
+                    <p class="attendance-eyebrow mb-1">Recognized Person</p>
+                    <div class="recognition-card">
+                        <div class="recognition-photo-wrap">
+                            <img id="recognizedStudentImage" class="recognition-photo d-none" alt="Recognized student">
+                            <div id="recognizedStudentPlaceholder" class="recognition-photo-placeholder">
+                                <i class="fas fa-user"></i>
+                            </div>
+                        </div>
+                        <div class="recognition-info">
+                            <div>
+                                <span class="text-muted">Name</span>
+                                <strong id="recognizedStudentName" class="d-block">Waiting for recognition</strong>
+                            </div>
+                            <div>
+                                <span class="text-muted">Student ID</span>
+                                <strong id="recognizedStudentId" class="d-block">-</strong>
+                            </div>
+                            <div>
+                                <span class="text-muted">Major</span>
+                                <strong id="recognizedStudentMajor" class="d-block">-</strong>
+                            </div>
+                            <div>
+                                <span class="text-muted">Year</span>
+                                <strong id="recognizedStudentYear" class="d-block">-</strong>
+                            </div>
+                            <div>
+                                <span class="text-muted">Match score</span>
+                                <strong id="recognizedStudentSimilarity" class="d-block">-</strong>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
             </div>
             <div class="attendance-meta">
                 <div>
@@ -86,9 +158,18 @@
             </div>
         </section>
 
-        <!-- Top Stats Row -->
+        <section id="attendanceResult" class="attendance-result-card d-none mb-5" aria-live="polite">
+            <div id="attendanceResultIcon" class="attendance-result-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div>
+                <p class="attendance-eyebrow mb-1">Attendance Status</p>
+                <h2 id="attendanceResultTitle" class="h4 fw-bold mb-2">Waiting for scan</h2>
+                <p id="attendanceResultMessage" class="mb-0 text-muted">Recognized students will see their attendance status here.</p>
+            </div>
+        </section>
+
         <div class="row g-4 mb-5">
-            <!-- Total Students -->
             <div class="col-md-6 col-lg-3">
                 <div class="glass-panel stat-card text-center h-100 cursor-pointer" data-bs-toggle="modal" data-bs-target="#totalStudentsModal" title="View Students">
                     <div class="text-muted text-uppercase fw-bold mb-2">Total Students</div>
@@ -96,8 +177,7 @@
                     <div class="stat-value" id="totalStudents">-</div>
                 </div>
             </div>
-            
-            <!-- Present Today -->
+
             <div class="col-md-6 col-lg-3">
                 <div class="glass-panel stat-card text-center h-100 cursor-pointer" data-bs-toggle="modal" data-bs-target="#presentTodayModal" title="View Present Students" style="border-bottom: 4px solid var(--success);">
                     <div class="text-muted text-uppercase fw-bold mb-2">Present Today</div>
@@ -106,7 +186,6 @@
                 </div>
             </div>
 
-            <!-- Absent Today -->
             <div class="col-md-6 col-lg-3">
                 <div class="glass-panel stat-card text-center h-100 cursor-pointer" data-bs-toggle="modal" data-bs-target="#absentTodayModal" title="View Absent Students" style="border-bottom: 4px solid var(--danger);">
                     <div class="text-muted text-uppercase fw-bold mb-2">Absent Today</div>
@@ -115,7 +194,6 @@
                 </div>
             </div>
 
-            <!-- Overall % -->
             <div class="col-md-6 col-lg-3">
                 <div class="glass-panel stat-card text-center h-100">
                     <div class="text-muted text-uppercase fw-bold mb-2">Today's Attendance %</div>
@@ -126,9 +204,6 @@
         </div>
     </div>
 
-    <!-- Modals for Student Lists -->
-
-    <!-- Total Students Modal -->
     <div class="modal fade" id="totalStudentsModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content glass-panel text-white border-secondary">
@@ -145,7 +220,6 @@
         </div>
     </div>
 
-    <!-- Present Today Modal -->
     <div class="modal fade" id="presentTodayModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content glass-panel text-white border-secondary">
@@ -162,7 +236,6 @@
         </div>
     </div>
 
-    <!-- Absent Today Modal -->
     <div class="modal fade" id="absentTodayModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content glass-panel text-white border-secondary">
@@ -179,7 +252,6 @@
         </div>
     </div>
 
-    <!-- Add Student Modal -->
     <div class="modal fade" id="addStudentModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content glass-panel" style="border: 1px solid var(--glass-border);">

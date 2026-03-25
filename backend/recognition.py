@@ -9,6 +9,7 @@ import faiss
 import numpy as np
 from insightface.app import FaceAnalysis
 
+from attendance_rules import evaluate_attendance_rules
 from database import get_student_by_id, mark_attendance
 
 
@@ -120,7 +121,7 @@ class BrowserRecognitionSystem:
         with self.lock:
             return self._get_status_unlocked()
 
-    def recognize_frame_bytes(self, frame_bytes):
+    def recognize_frame_bytes(self, frame_bytes, student_latitude=None, student_longitude=None):
         started_at = time.perf_counter()
 
         with self.lock:
@@ -213,11 +214,36 @@ class BrowserRecognitionSystem:
 
         student = get_student_by_id(matched_student_id)
         student_name = student.get("name") if student else matched_student_id
+        rule_check = evaluate_attendance_rules(student_latitude, student_longitude)
+
+        if not rule_check["ok"]:
+            with self.lock:
+                self.last_student_id = matched_student_id
+                self.last_student_name = student_name
+                self.last_error = rule_check["message"]
+                self._set_event("attendance_blocked", f"Attendance blocked for {student_name}")
+                status = self._get_status_unlocked()
+
+            return {
+                **status,
+                "matched": True,
+                "student_id": matched_student_id,
+                "student_name": student_name,
+                "student_major": student.get("major") if student else "",
+                "student_year": student.get("year") if student else "",
+                "student_image_url": f"/static/student_images/{matched_student_id}.jpg",
+                "similarity": round(best_similarity, 4),
+                "message": rule_check["message"],
+                "distance_meters": rule_check.get("distance_meters"),
+                "elapsed_ms": round((time.perf_counter() - started_at) * 1000, 1)
+            }
+
         result = mark_attendance(matched_student_id, self.current_day)
 
         with self.lock:
             self.last_student_id = matched_student_id
             self.last_student_name = student_name
+            self.last_error = ""
 
             if result["ok"]:
                 self.marked_today.add(matched_student_id)

@@ -259,6 +259,16 @@ async function loadStudentStats() {
 // ===============================
 // ADMIN DASHBOARD STATS
 // ===============================
+const attendanceRulesForm = document.getElementById('attendanceRulesForm');
+const attendanceLocationNameInput = document.getElementById('attendanceLocationName');
+const attendanceLatitudeInput = document.getElementById('attendanceLatitude');
+const attendanceLongitudeInput = document.getElementById('attendanceLongitude');
+const attendanceStartTimeInput = document.getElementById('attendanceStartTime');
+const attendanceEndTimeInput = document.getElementById('attendanceEndTime');
+const attendanceRuleSummary = document.getElementById('attendanceRuleSummary');
+const useCurrentLocationBtn = document.getElementById('useCurrentLocationBtn');
+const saveAttendanceRulesBtn = document.getElementById('saveAttendanceRulesBtn');
+
 async function loadAdminStats() {
 
     try {
@@ -313,6 +323,116 @@ async function loadAdminStats() {
 
     }
 
+    await loadAttendanceRules({ adminView: true });
+
+}
+
+function renderAttendanceRuleSummary(rules = {}) {
+    if (!attendanceRuleSummary) return;
+
+    if (!rules.location_configured || !rules.time_window_configured) {
+        attendanceRuleSummary.innerText = 'Rules not configured yet.';
+        return;
+    }
+
+    const locationLabel = rules.location_name || 'Saved location';
+    attendanceRuleSummary.innerText =
+        `${locationLabel} | ${rules.start_time} - ${rules.end_time} | ${rules.radius_meters || 5} m radius`;
+}
+
+function populateAttendanceRuleForm(rules = {}) {
+    if (attendanceLocationNameInput) attendanceLocationNameInput.value = rules.location_name || '';
+    if (attendanceLatitudeInput) attendanceLatitudeInput.value = rules.latitude ?? '';
+    if (attendanceLongitudeInput) attendanceLongitudeInput.value = rules.longitude ?? '';
+    if (attendanceStartTimeInput) attendanceStartTimeInput.value = rules.start_time || '';
+    if (attendanceEndTimeInput) attendanceEndTimeInput.value = rules.end_time || '';
+    renderAttendanceRuleSummary(rules);
+}
+
+async function loadAttendanceRules(options = {}) {
+    const { adminView = false } = options;
+
+    try {
+        const endpoint = adminView ? '/api/admin/attendance_rules' : '/api/attendance/rules';
+        const res = await fetch(endpoint);
+
+        if (adminView && res.status === 401) {
+            return;
+        }
+
+        const payload = await parseApiResponse(res);
+
+        if (!res.ok || !payload.data) {
+            return;
+        }
+
+        populateAttendanceRuleForm(payload.data);
+    } catch (err) {
+        console.error('Failed to load attendance rules', err);
+    }
+}
+
+if (useCurrentLocationBtn) {
+    useCurrentLocationBtn.addEventListener('click', async () => {
+        const originalText = useCurrentLocationBtn.innerHTML;
+        useCurrentLocationBtn.disabled = true;
+        useCurrentLocationBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Locating...';
+
+        try {
+            const coords = await ensureBrowserLocation({ forceRefresh: true });
+            if (attendanceLatitudeInput) attendanceLatitudeInput.value = coords.latitude;
+            if (attendanceLongitudeInput) attendanceLongitudeInput.value = coords.longitude;
+            showAlert('Current location captured successfully.', 'success');
+        } catch (err) {
+            showAlert(err.message || 'Could not fetch current location.', 'warning');
+        }
+
+        useCurrentLocationBtn.disabled = false;
+        useCurrentLocationBtn.innerHTML = originalText;
+    });
+}
+
+if (attendanceRulesForm) {
+    attendanceRulesForm.addEventListener('submit', async e => {
+        e.preventDefault();
+
+        const originalText = saveAttendanceRulesBtn ? saveAttendanceRulesBtn.innerHTML : 'Save Attendance Rules';
+
+        if (saveAttendanceRulesBtn) {
+            saveAttendanceRulesBtn.disabled = true;
+            saveAttendanceRulesBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+        }
+
+        try {
+            const res = await fetch('/api/admin/attendance_rules', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    location_name: attendanceLocationNameInput ? attendanceLocationNameInput.value : '',
+                    latitude: attendanceLatitudeInput ? attendanceLatitudeInput.value : '',
+                    longitude: attendanceLongitudeInput ? attendanceLongitudeInput.value : '',
+                    start_time: attendanceStartTimeInput ? attendanceStartTimeInput.value : '',
+                    end_time: attendanceEndTimeInput ? attendanceEndTimeInput.value : ''
+                })
+            });
+
+            const payload = await parseApiResponse(res);
+
+            if (!res.ok) {
+                throw new Error(payload.message || 'Failed to save attendance rules.');
+            }
+
+            populateAttendanceRuleForm(payload.data || {});
+            showAlert(payload.message || 'Attendance rules saved successfully.', 'success');
+        } catch (err) {
+            showAlert(err.message || 'Failed to save attendance rules.', 'danger');
+        }
+
+        if (saveAttendanceRulesBtn) {
+            saveAttendanceRulesBtn.disabled = false;
+            saveAttendanceRulesBtn.innerHTML = originalText;
+        }
+    });
 }
 
 
@@ -348,6 +468,54 @@ let attendanceStartInFlight = false;
 let attendanceStream = null;
 let recognitionLoopTimer = null;
 let recognitionRequestInFlight = false;
+let latestAttendanceCoords = null;
+let latestAttendanceCoordsAt = 0;
+
+async function requestBrowserLocation() {
+    if (!navigator.geolocation) {
+        throw new Error('Geolocation is not supported in this browser.');
+    }
+
+    return await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+            position => {
+                const coords = {
+                    latitude: Number(position.coords.latitude),
+                    longitude: Number(position.coords.longitude)
+                };
+                latestAttendanceCoords = coords;
+                latestAttendanceCoordsAt = Date.now();
+                resolve(coords);
+            },
+            error => {
+                reject(new Error(error?.message || 'Could not fetch your location.'));
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 5000
+            }
+        );
+    });
+}
+
+async function ensureBrowserLocation(options = {}) {
+    const { silent = false, forceRefresh = false } = options;
+    const hasFreshCoords = latestAttendanceCoords && (Date.now() - latestAttendanceCoordsAt) < 15000;
+
+    if (!forceRefresh && hasFreshCoords) {
+        return latestAttendanceCoords;
+    }
+
+    try {
+        return await requestBrowserLocation();
+    } catch (err) {
+        if (!silent) {
+            showAlert(err.message || 'Location access is required', 'warning');
+        }
+        throw err;
+    }
+}
 
 function updateAttendanceBadge(active, hasError = false) {
     if (!attendanceStatusBadge) return;
@@ -532,6 +700,17 @@ async function captureAndRecognizeFrame() {
         const formData = new FormData();
         formData.append('frame', blob, 'frame.jpg');
 
+        try {
+            const coords = await ensureBrowserLocation({ silent: true });
+            if (coords) {
+                formData.append('latitude', coords.latitude);
+                formData.append('longitude', coords.longitude);
+            }
+        } catch (err) {
+            formData.append('latitude', '');
+            formData.append('longitude', '');
+        }
+
         const res = await fetch('/api/attendance/recognize_frame', {
             method: 'POST',
             body: formData
@@ -588,6 +767,17 @@ async function captureAndRecognizeFrame() {
                 data.last_error || data.message || 'The system could not save attendance right now.'
             );
             showAlert(data.last_error || data.message || 'Attendance could not be marked', 'danger');
+        } else if (data.last_event_type === 'attendance_blocked') {
+            updateAttendanceResult(
+                'warning',
+                'Attendance Blocked',
+                data.last_error || data.message || 'You are outside the allowed attendance conditions.'
+            );
+            showAlert(data.last_error || data.message || 'Attendance blocked', 'warning');
+            await stopAttendanceRecognition({
+                showSuccessToast: false,
+                preserveResult: true
+            });
         }
     } catch (err) {
         const message = err?.message || 'Recognition failed';
@@ -626,6 +816,7 @@ async function startAttendanceRecognition(buttonOverride = cameraBtn) {
     buttonOverride.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Launching...';
 
     try {
+        await ensureBrowserLocation();
 
         const res = await fetch('/api/start_attendance', {
             method: 'POST'

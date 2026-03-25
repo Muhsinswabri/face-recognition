@@ -201,6 +201,28 @@ body::before {
     padding: 1.5rem;
 }
 
+.rule-panel {
+    padding: 1.5rem;
+}
+
+.rule-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.rule-summary {
+    min-width: 220px;
+    padding: 0.9rem 1rem;
+    border-radius: 14px;
+    border: 1px solid rgba(125, 211, 252, 0.15);
+    background: rgba(15, 23, 42, 0.45);
+    color: var(--text-main);
+    font-weight: 600;
+}
+
 .attendance-viewer-header {
     display: flex;
     justify-content: space-between;
@@ -368,6 +390,14 @@ body::before {
 }
 
 @media (max-width: 768px) {
+    .rule-panel-header {
+        flex-direction: column;
+    }
+
+    .rule-summary {
+        width: 100%;
+    }
+
     .attendance-viewer-header {
         flex-direction: column;
     }
