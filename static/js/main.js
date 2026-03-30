@@ -263,6 +263,7 @@ const attendanceRulesForm = document.getElementById('attendanceRulesForm');
 const attendanceLocationNameInput = document.getElementById('attendanceLocationName');
 const attendanceLatitudeInput = document.getElementById('attendanceLatitude');
 const attendanceLongitudeInput = document.getElementById('attendanceLongitude');
+const attendanceRadiusInput = document.getElementById('attendanceRadius');
 const attendanceStartTimeInput = document.getElementById('attendanceStartTime');
 const attendanceEndTimeInput = document.getElementById('attendanceEndTime');
 const attendanceRuleSummary = document.getElementById('attendanceRuleSummary');
@@ -330,7 +331,14 @@ async function loadAdminStats() {
 function renderAttendanceRuleSummary(rules = {}) {
     if (!attendanceRuleSummary) return;
 
-    if (!rules.location_configured || !rules.time_window_configured) {
+    const locationConfigured = typeof rules.location_configured === 'boolean'
+        ? rules.location_configured
+        : rules.latitude !== null && rules.latitude !== undefined && rules.longitude !== null && rules.longitude !== undefined;
+    const timeWindowConfigured = typeof rules.time_window_configured === 'boolean'
+        ? rules.time_window_configured
+        : Boolean(rules.start_time && rules.end_time);
+
+    if (!locationConfigured || !timeWindowConfigured) {
         attendanceRuleSummary.innerText = 'Rules not configured yet.';
         return;
     }
@@ -344,6 +352,7 @@ function populateAttendanceRuleForm(rules = {}) {
     if (attendanceLocationNameInput) attendanceLocationNameInput.value = rules.location_name || '';
     if (attendanceLatitudeInput) attendanceLatitudeInput.value = rules.latitude ?? '';
     if (attendanceLongitudeInput) attendanceLongitudeInput.value = rules.longitude ?? '';
+    if (attendanceRadiusInput) attendanceRadiusInput.value = rules.radius_meters ?? 5;
     if (attendanceStartTimeInput) attendanceStartTimeInput.value = rules.start_time || '';
     if (attendanceEndTimeInput) attendanceEndTimeInput.value = rules.end_time || '';
     renderAttendanceRuleSummary(rules);
@@ -411,6 +420,7 @@ if (attendanceRulesForm) {
                     location_name: attendanceLocationNameInput ? attendanceLocationNameInput.value : '',
                     latitude: attendanceLatitudeInput ? attendanceLatitudeInput.value : '',
                     longitude: attendanceLongitudeInput ? attendanceLongitudeInput.value : '',
+                    radius_meters: attendanceRadiusInput ? attendanceRadiusInput.value : '5',
                     start_time: attendanceStartTimeInput ? attendanceStartTimeInput.value : '',
                     end_time: attendanceEndTimeInput ? attendanceEndTimeInput.value : ''
                 })

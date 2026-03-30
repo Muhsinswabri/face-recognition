@@ -8,6 +8,7 @@ BASE_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(BASE_DIR, "data")
 RULES_FILE = os.path.join(DATA_DIR, "attendance_rules.json")
 DEFAULT_RADIUS_METERS = 5.0
+MAX_RADIUS_METERS = 30.0
 DEFAULT_RULES = {
     "location_name": "",
     "latitude": None,
@@ -33,7 +34,12 @@ def _normalized_rules(data):
     except (TypeError, ValueError):
         radius = DEFAULT_RADIUS_METERS
 
-    rules["radius_meters"] = radius if radius > 0 else DEFAULT_RADIUS_METERS
+    if radius <= 0:
+        radius = DEFAULT_RADIUS_METERS
+    elif radius > MAX_RADIUS_METERS:
+        radius = MAX_RADIUS_METERS
+
+    rules["radius_meters"] = radius
     rules["location_name"] = str(rules.get("location_name") or "").strip()
     rules["start_time"] = str(rules.get("start_time") or "").strip()
     rules["end_time"] = str(rules.get("end_time") or "").strip()
@@ -63,7 +69,7 @@ def load_attendance_rules():
         return dict(DEFAULT_RULES)
 
 
-def save_attendance_rules(location_name, latitude, longitude, start_time, end_time):
+def save_attendance_rules(location_name, latitude, longitude, start_time, end_time, radius_meters=None):
     _ensure_data_dir()
 
     cleaned_location = str(location_name or "").strip()
@@ -86,11 +92,22 @@ def save_attendance_rules(location_name, latitude, longitude, start_time, end_ti
     if cleaned_start_time >= cleaned_end_time:
         raise ValueError("End time must be later than start time.")
 
+    try:
+        cleaned_radius = float(radius_meters if radius_meters not in ("", None) else DEFAULT_RADIUS_METERS)
+    except (TypeError, ValueError):
+        raise ValueError("Radius must be a valid number.")
+
+    if cleaned_radius <= 0:
+        raise ValueError("Radius must be greater than 0 meters.")
+
+    if cleaned_radius > MAX_RADIUS_METERS:
+        raise ValueError(f"Radius cannot be more than {int(MAX_RADIUS_METERS)} meters.")
+
     rules = {
         "location_name": cleaned_location,
         "latitude": cleaned_latitude,
         "longitude": cleaned_longitude,
-        "radius_meters": DEFAULT_RADIUS_METERS,
+        "radius_meters": cleaned_radius,
         "start_time": cleaned_start_time,
         "end_time": cleaned_end_time,
         "updated_at": datetime.datetime.now().isoformat(timespec="seconds")
@@ -167,7 +184,7 @@ def evaluate_attendance_rules(student_latitude, student_longitude, now=None):
         return {
             "ok": False,
             "reason": "outside_location_radius",
-            "message": f"You must be within 5 meters of {location_label} to mark attendance.",
+            "message": f"You must be within {rules['radius_meters']:.0f} meters of {location_label} to mark attendance.",
             "distance_meters": round(distance_meters, 2)
         }
 

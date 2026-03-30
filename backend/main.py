@@ -233,6 +233,7 @@ def api_save_admin_attendance_rules():
             location_name=data.get('location_name'),
             latitude=data.get('latitude'),
             longitude=data.get('longitude'),
+            radius_meters=data.get('radius_meters'),
             start_time=data.get('start_time'),
             end_time=data.get('end_time')
         )
@@ -250,7 +251,7 @@ def api_save_admin_attendance_rules():
     return jsonify({
         "status": "success",
         "message": "Attendance rules saved successfully.",
-        "data": rules
+        "data": get_public_attendance_rules()
     })
 
 
